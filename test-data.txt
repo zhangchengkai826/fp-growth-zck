@@ -1,5 +1,10 @@
 Tid Items
-10 A, C, D
-20 B, C, E
-30 A, B, C, E
-40 B, E
+100 A, B, E
+200 B, D
+300 B, C
+400 A, B, D
+500 A, C
+600 B, C
+700 A, C
+800 A, B, C, E
+900 A, B, C

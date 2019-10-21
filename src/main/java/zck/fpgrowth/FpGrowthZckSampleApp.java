@@ -10,8 +10,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Scanner;
 import java.util.Iterator;
+import java.util.Scanner;
 
 public class FpGrowthZckSampleApp {
     private static class ItemSet{
@@ -106,12 +106,20 @@ public class FpGrowthZckSampleApp {
         }
         return result;
     }
-    private static boolean aprioi(String dataFilePath, int minSupCnt, double minConfThr) {
+    private static class TreeNode {
+        public TreeNode parent;
+        public ArrayList<TreeNode> children = new ArrayList<>();
+        public String item;
+        public int count;
+        public TreeNode next;
+    }
+    private static boolean fpGrowth(String dataFilePath, int minSupCnt, double minConfThr) {
         BufferedReader br;
         ArrayList<ItemSet> C = new ArrayList<ItemSet>();
         ArrayList<ItemSet> freqItemSets = new ArrayList<ItemSet>();
         ArrayList<ArrayList<String>> dataCache = new ArrayList<>();
         ArrayList<String> itemsCache = new ArrayList<>();
+        ArrayList<ItemSet> CSupDesc;
         try{
             br = new BufferedReader(new FileReader(dataFilePath));
             String line;
@@ -154,6 +162,19 @@ public class FpGrowthZckSampleApp {
                     return o1.items.get(0).compareTo(o2.items.get(0));
                 }
             });
+            itemsCache.sort(new Comparator<String>() {
+                @Override
+                public int compare(String o1, String o2) {
+                    return o1.compareTo(o2);
+                }
+            });
+            CSupDesc = (ArrayList<ItemSet>)C.clone();
+            CSupDesc.sort(new Comparator<ItemSet>() {
+                @Override
+                public int compare(ItemSet o1, ItemSet o2) {
+                    return o2.supCnt - o1.supCnt;
+                }
+            });
             br.close();
         } catch(FileNotFoundException e) {
             e.printStackTrace();
@@ -162,6 +183,54 @@ public class FpGrowthZckSampleApp {
             e.printStackTrace();
             return false;
         }
+
+        // build the tree
+        TreeNode root = new TreeNode();
+        TreeNode[] lklist = new TreeNode[itemsCache.size()];
+        for(int i = 0; i < lklist.length; i++) {
+            lklist[i] = null;
+        }
+        for(ArrayList<String> row : dataCache) {
+            ArrayList<ItemSet> t = new ArrayList<>();
+            for(String itm : row) {
+                int supCnt = 0;
+                for(ItemSet s : CSupDesc) {
+                    if(s.items.get(0) == itm) {
+                        supCnt = s.supCnt;
+                        break;
+                    }
+                }
+                if(supCnt > 0) {
+                    ItemSet s = new ItemSet(supCnt);
+                    s.items.add(itm);
+                    t.add(s);
+                }
+            }
+            t.sort(new Comparator<ItemSet>() {
+                @Override
+                public int compare(ItemSet o1, ItemSet o2) {
+                    return o2.supCnt - o1.supCnt;
+                }
+            });
+            TreeNode node = root;
+            for(ItemSet s : t) {
+                if(node.children.stream().filter(o -> o.item == s.items.get(0)).findFirst().isPresent()) {
+                    node.children.stream().filter(o -> o.item == s.items.get(0)).findFirst().get().count++;
+                } else {
+                    TreeNode newNode = new TreeNode();
+                    newNode.parent = node;
+                    newNode.item = s.items.get(0);
+                    newNode.count = 1;
+                    newNode.next = lklist[itemsCache.indexOf(newNode.item)];
+                    lklist[itemsCache.indexOf(newNode.item)] = newNode;
+                    node.children.add(newNode);
+                }
+                node = node.children.stream().filter(o -> o.item == s.items.get(0)).findFirst().get();
+            }
+        }
+
+        
+
         while(true) {
             freqItemSets.addAll(C);
             ArrayList<ItemSet> C1 = selfJoin(C);
@@ -262,7 +331,7 @@ public class FpGrowthZckSampleApp {
         }
         System.out.println(String.format("INFO: Minimum confidence threshold: %f", minConfThr));
 
-        aprioi(dataFilePath, minSupCnt, minConfThr);
+        fpGrowth(dataFilePath, minSupCnt, minConfThr);
 
         sc.close();
     }
