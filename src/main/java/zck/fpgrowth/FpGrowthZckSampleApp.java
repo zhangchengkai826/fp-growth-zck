@@ -10,8 +10,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Scanner;
+import java.util.Iterator;
 
 public class FpGrowthZckSampleApp {
     private static class ItemSet{
@@ -112,6 +112,12 @@ public class FpGrowthZckSampleApp {
         public String item;
         public int count;
         public TreeNode next;
+    }
+    private static class CondPatternItemSet extends ItemSet {
+        public CondPatternItemSet(Integer supCnt) {
+            super(supCnt);
+        }
+        public int subTreeId;
     }
     private static boolean fpGrowth(String dataFilePath, int minSupCnt, double minConfThr) {
         BufferedReader br;
@@ -229,32 +235,53 @@ public class FpGrowthZckSampleApp {
             }
         }
 
-        
+        for(int i = CSupDesc.size()-1; i >= 0; i--) {
+            if(CSupDesc.get(i).supCnt >= minSupCnt) {
+                freqItemSets.add(CSupDesc.get(i));
+            }
+            String itm = CSupDesc.get(i).items.get(0);
+            TreeNode node = lklist[itemsCache.indexOf(itm)];
+            
+            // calculate conditional pattern base
+            ArrayList<CondPatternItemSet> condPatternBase = new ArrayList<>();
+            while(node != null) {
+                TreeNode p = node.parent;
+                if(p != root) {
+                    CondPatternItemSet s = new CondPatternItemSet(node.count);
+                    while(true) {  
+                        s.items.add(p.item);
+                        if(p.parent == root) {
+                            s.subTreeId = itemsCache.indexOf(p.item);
+                            break;
+                        }
+                        p = p.parent;
+                    }
+                    condPatternBase.add(s);
+                }
+                node = node.next;
+            }
 
-        while(true) {
-            freqItemSets.addAll(C);
-            ArrayList<ItemSet> C1 = selfJoin(C);
-            if(C1.isEmpty()) {
-                break;
-            }
-            C1 = prune(C1, C);
-            if(C1.isEmpty()) {
-                break;
-            }
-            C.clear();
-            for(ItemSet s : C1) {
-                int supCnt = 0;
-                for(ArrayList<String> r : dataCache) {
-                    if(r.containsAll(s.items)) {
-                        supCnt++;
+            // build conditional FP-tree
+            HashMap<Integer, HashMap<String, Integer>> condFpTree = new HashMap<>();
+            for(CondPatternItemSet s : condPatternBase) {
+                for(String itm1 : s.items) {
+                    if(!condFpTree.containsKey(s.subTreeId)) {
+                        condFpTree.put(s.subTreeId, new HashMap<>());
+                    }
+                    if(!condFpTree.get(s.subTreeId).containsKey(itm1)) {
+                        condFpTree.get(s.subTreeId).put(itm1, s.supCnt);
+                    } else {
+                        Integer t = condFpTree.get(s.subTreeId).get(itm1);
+                        t += s.supCnt;
+                        condFpTree.get(s.subTreeId).put(itm1, t);
                     }
                 }
-                s.supCnt = supCnt;
-                if(s.supCnt >= minSupCnt) {
-                    C.add(s);
-                }
             }
+
+
         }
+
+        
         
         System.out.println("INFO: All frequent itemsets:");
         for(ItemSet s : freqItemSets) {
