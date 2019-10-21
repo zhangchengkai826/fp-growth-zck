@@ -11,8 +11,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Scanner;
 import java.util.Map;
+import java.util.Scanner;
 
 public class FpGrowthZckSampleApp {
     private static class ItemSet{
@@ -33,79 +33,6 @@ public class FpGrowthZckSampleApp {
             sb.append("}");
             return sb.toString();
         }
-    }
-    private static ArrayList<ItemSet> selfJoin(ArrayList<ItemSet> x){
-        ArrayList<ItemSet> result = new ArrayList<ItemSet>();
-        for(int i = 0; i < x.size(); i++) {
-            ItemSet a = x.get(i);
-            for(int j = i+1; j < x.size(); j++) {
-                ItemSet b = x.get(j);
-                boolean ok = true;
-                // a.items & b.items are ordered. (this can be proved by induction)
-                for(int k = 0; k < a.items.size()-1; k++) {
-                    if(a.items.get(k) != b.items.get(k)) {
-                        ok = false;
-                        break;
-                    }
-                }
-                if(ok) {
-                    // itemset support count cannot be determined yet.
-                    ItemSet newItemSet = new ItemSet(0);
-                    for(int k = 0; k < a.items.size(); k++) {
-                        newItemSet.items.add(a.items.get(k));
-                    }
-                    newItemSet.items.add(b.items.get(b.items.size()-1));
-                    result.add(newItemSet);
-                }
-            }
-        }
-        return result;
-    }
-    private static ArrayList<ItemSet> prune(ArrayList<ItemSet> C1, ArrayList<ItemSet> C) {
-        ArrayList<ItemSet> result = new ArrayList<ItemSet>();
-        for(ItemSet s : C1) {
-            boolean ok = true;
-            for(int ms = 0; ms < s.items.size(); ms++) {
-                int c1j = 0, ci = 0, cj = 0;
-                if(ms == c1j) {
-                    ms++;
-                }
-                while(true) {
-                    if(cj >= C.get(ci).items.size()) {
-                        // find an itemset in C
-                        break;
-                    }
-                    if(ci >= C.size()) {
-                        // cannot find an itemset in C
-                        ok = false;
-                        break;
-                    }
-                    int comp = s.items.get(c1j).compareTo(C.get(ci).items.get(cj));
-                    if(comp == 0) {
-                        // test next item
-                        c1j++; cj++;
-                        continue;
-                    } else if(comp < 0) {
-                        // cannot find an itemset in C
-                        ok = false;
-                        break;
-                    } else {
-                        // test next itemset
-                        ci++;
-                        continue;
-                    }
-                }
-                if(!ok) {
-                    // cannot find an itemset in C corresponding to {itemset s in C1 dropping item at position *ms*}
-                    break;
-                }
-            }
-            if(ok) {
-                // find an itemset in C corresponding to {itemset s in C1 dropping item at position *ms*}
-                result.add(s);
-            }
-        }
-        return result;
     }
     private static class TreeNode {
         public TreeNode parent;
@@ -202,7 +129,7 @@ public class FpGrowthZckSampleApp {
             for(String itm : row) {
                 int supCnt = 0;
                 for(ItemSet s : CSupDesc) {
-                    if(s.items.get(0) == itm) {
+                    if(s.items.get(0).compareTo(itm) == 0) {
                         supCnt = s.supCnt;
                         break;
                     }
@@ -294,6 +221,7 @@ public class FpGrowthZckSampleApp {
                 }
             }
             
+            // find freq itemsets
             for(HashMap hm : condFpTree.values()) {
                 ArrayList<String> arr = new ArrayList<>(hm.keySet());
                 ArrayList<String> sub = new ArrayList<>();
@@ -332,8 +260,6 @@ public class FpGrowthZckSampleApp {
             }
         }
 
-        
-        
         System.out.println("INFO: All frequent itemsets:");
         for(ItemSet s : freqItemSets) {
             System.out.println(String.format("  %s support count: %d", s.getItemsRepr(), s.supCnt));
