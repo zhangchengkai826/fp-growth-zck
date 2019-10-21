@@ -11,8 +11,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Scanner;
+import java.util.Map;
 
 public class FpGrowthZckSampleApp {
     private static class ItemSet{
@@ -294,6 +294,42 @@ public class FpGrowthZckSampleApp {
                 }
             }
             
+            for(HashMap hm : condFpTree.values()) {
+                ArrayList<String> arr = new ArrayList<>(hm.keySet());
+                ArrayList<String> sub = new ArrayList<>();
+                int binSet = (1 << arr.size()) - 1;
+                for(int b = binSet; b > 0; b &= binSet) {
+                    sub.clear();
+                    for(int x = 0; x < arr.size(); x++) {
+                        if((b & (1 << x)) > 0) {
+                            sub.add(arr.get(x));
+                        }
+                    }
+                    int minCnt = (int)hm.get(sub.get(0));
+                    for(int x = 1; x < sub.size(); x++) {
+                        if((int)hm.get(sub.get(x)) < minCnt) {
+                            minCnt = (int)hm.get(sub.get(x));
+                        }
+                    }
+
+                    sub.add(itm);
+                    sub.sort(new Comparator<String>() {
+                        @Override
+                        public int compare(String o1, String o2) {
+                            return o1.compareTo(o2);
+                        }
+                    });
+                    if(!freqItemSets.stream().filter(o -> o.items.equals(sub)).findFirst().isPresent()) {
+                        ItemSet itmSet = new ItemSet(minCnt);
+                        itmSet.items = (ArrayList)sub.clone();
+                        freqItemSets.add(itmSet);
+                    } else {
+                        freqItemSets.stream().filter(o -> o.items.equals(sub)).findFirst().get().supCnt += minCnt;
+                    }
+
+                    b--;
+                }
+            }
         }
 
         
