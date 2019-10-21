@@ -10,8 +10,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Scanner;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Scanner;
 
 public class FpGrowthZckSampleApp {
     private static class ItemSet{
@@ -277,8 +278,22 @@ public class FpGrowthZckSampleApp {
                     }
                 }
             }
-
-
+            Iterator it1 = condFpTree.entrySet().iterator();
+            while(it1.hasNext()) {
+                Map.Entry pair1 = (Map.Entry)it1.next();
+                HashMap hm = (HashMap)pair1.getValue();
+                Iterator it2 = hm.entrySet().iterator();
+                while(it2.hasNext()) {
+                    Map.Entry pair2 = (Map.Entry)it2.next();
+                    if((int)pair2.getValue() < minSupCnt) {
+                        it2.remove();
+                    }
+                }
+                if(hm.isEmpty()) {
+                    it1.remove();
+                }
+            }
+            
         }
 
         
